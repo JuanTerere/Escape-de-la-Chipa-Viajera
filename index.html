@@ -188,7 +188,7 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         ctx.imageSmoothingEnabled = true;
@@ -546,32 +546,44 @@
 
 
         // ==========================================
-        // --- RANKING (Almacenamiento compartido) ---
+        // --- RANKING con Firebase Firestore ---
         // ==========================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit }
+            from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB10bUqX1pgVevX2bEHjEjj0XaxaEby3yE",
+            authDomain: "la-chipa-viajera.firebaseapp.com",
+            projectId: "la-chipa-viajera",
+            storageBucket: "la-chipa-viajera.firebasestorage.app",
+            messagingSenderId: "407996707990",
+            appId: "1:407996707990:web:ec2c56f42a05b67cd13eb7",
+            measurementId: "G-248HFSHRSL"
+        };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        const db = getFirestore(firebaseApp);
+
         async function guardarEnRanking(nombre, puntos) {
             try {
-                const key = `rank_${nombre.trim().toLowerCase().replace(/\s+/g,'_')}_${Date.now()}`;
-                await window.storage.set(key, JSON.stringify({ nombre: nombre.trim(), puntos }), true);
-            } catch(e) { console.log('Storage no disponible:', e); }
+                await addDoc(collection(db, "ranking"), {
+                    nombre: nombre.trim(),
+                    puntos: puntos,
+                    fecha: new Date()
+                });
+            } catch(e) { console.error("Error guardando ranking:", e); }
         }
 
         async function obtenerRanking() {
             try {
-                const result = await window.storage.list('rank_', true);
-                if (!result || !result.keys) return [];
-                const entradas = [];
-                for (const k of result.keys) {
-                    try {
-                        const r = await window.storage.get(k, true);
-                        if (r) entradas.push(JSON.parse(r.value));
-                    } catch(e) {}
-                }
-                return entradas.sort((a,b) => b.puntos - a.puntos).slice(0, 10);
-            } catch(e) { return []; }
+                const q = query(collection(db, "ranking"), orderBy("puntos", "desc"), limit(10));
+                const snap = await getDocs(q);
+                return snap.docs.map(d => d.data());
+            } catch(e) { console.error("Error leyendo ranking:", e); return []; }
         }
 
         async function abrirRanking() {
-            // Guardar puntaje actual si tiene nombre y puntos > 0
             const nombre = document.getElementById("playerName").value.trim() || "Un Viajero";
             if (score > 0) await guardarEnRanking(nombre, score);
 
