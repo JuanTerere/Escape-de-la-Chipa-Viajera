@@ -100,6 +100,56 @@
         .btn-dl { background-color: #607d8b; }
         .btn-close { background-color: #9e9e9e; grid-column: span 2; margin-top: 5px;}
         .btn:hover { filter: brightness(1.2); }
+        .btn-rank { background-color: #f57c00; grid-column: span 2; }
+
+        /* Modal Ranking */
+        #rankingModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+        #rankingBox {
+            background: #1a1a1a;
+            border: 3px solid #ffd54f;
+            border-radius: 12px;
+            padding: 30px 40px;
+            min-width: 340px;
+            max-width: 420px;
+            text-align: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #rankingBox h2 {
+            color: #ffd54f;
+            font-family: Impact, sans-serif;
+            font-size: 28px;
+            margin: 0 0 16px;
+            letter-spacing: 2px;
+        }
+        #rankingList {
+            list-style: none;
+            padding: 0; margin: 0 0 20px;
+        }
+        #rankingList li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid #333;
+            font-size: 15px;
+        }
+        #rankingList li:first-child { color: #ffd54f; font-weight: bold; font-size: 17px; }
+        #rankingList li:nth-child(2) { color: #c0c0c0; font-weight: bold; }
+        #rankingList li:nth-child(3) { color: #cd7f32; font-weight: bold; }
+        .rank-pos { width: 28px; text-align: left; }
+        .rank-nombre { flex: 1; text-align: left; padding-left: 6px; }
+        .rank-pts { font-weight: bold; color: #ffd54f; }
+        .btn-cerrar-rank { background: #9e9e9e; width: 100%; padding: 10px; border: none;
+            border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-cerrar-rank:hover { filter: brightness(1.2); }
     </style>
 </head>
 <body>
@@ -113,7 +163,7 @@
                 <p id="txtPuntajeLogro" style="font-size: 18px; margin-top: 10px; font-weight: bold;"></p>
             </div>
             <div class="share-right">
-                <h2>¡COMPARTÍ TU VIAJE!</h2>
+                <h2>¡COMPARTÍ TU LOGRO!</h2>
                 <label for="playerName">Ingresá tu nombre:</label>
                 <input type="text" id="playerName" placeholder="Ej: Juan" value="Un Viajero">
                 
@@ -122,9 +172,19 @@
                     <button class="btn btn-fb" onclick="compartir('facebook')">Facebook</button>
                     <button class="btn btn-em" onclick="compartir('email')">Correo</button>
                     <button class="btn btn-dl" onclick="descargarLogro()">Descargar Info</button>
+                    <button class="btn btn-rank" onclick="abrirRanking()">🏆 Ver Ranking</button>
                     <button class="btn btn-close" onclick="cerrarCompartir()">Volver al Juego</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Ranking -->
+    <div id="rankingModal">
+        <div id="rankingBox">
+            <h2>🏆 TOP 10 RANKING</h2>
+            <ul id="rankingList"></ul>
+            <button class="btn-cerrar-rank" onclick="cerrarRanking()">Cerrar</button>
         </div>
     </div>
 
@@ -445,7 +505,7 @@
         // --- FUNCIONES DE LA INTERFAZ COMPARTIR ---
         // ==========================================
         function abrirCompartir() {
-            document.getElementById("txtPuntajeLogro").innerText = `¡Salvaste ${score} chipas en la ruta!`;
+            document.getElementById("txtPuntajeLogro").innerText = `¡Sumaste ${score} puntos!`;
             document.getElementById("shareScreen").style.display = "flex";
         }
 
@@ -455,7 +515,7 @@
 
         function obtenerMensaje() {
             let nombre = document.getElementById("playerName").value || "Un Viajero";
-            return encodeURIComponent(`¡${nombre} salvó ${score} chipas en La Chipa Viajera! 🫓🌍 ¿Podés superarme? Jugá acá: https://juanterere.github.io/Escape-de-la-Chipa-Viajera/`);
+            return encodeURIComponent(`¡${nombre} sumó ${score} puntos en La Chipa Viajera! 🫓🌍 ¿Podés superarme? Jugá acá: https://juanterere.github.io/Escape-de-la-Chipa-Viajera/`);
         }
 
         function compartir(plataforma) {
@@ -475,13 +535,69 @@
 
         function descargarLogro() {
             let nombre = document.getElementById("playerName").value || "Un Viajero";
-            let contenido = `--- CERTIFICADO DE LA CHIPA VIAJERA ---\n\nFelicitaciones ${nombre}.\nLograste salvar un total de: ${score} chipas en las rutas de Paraguay.\n\n¡Gracias por jugar!`;
+            let contenido = `--- CERTIFICADO DE LA CHIPA VIAJERA ---\n\nFelicitaciones ${nombre}.\nSumaste un total de: ${score} puntos en La Chipa Viajera.\n\n¡Gracias por jugar!`;
             
             let blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
             let link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = `Logro_ChipaViajera_${nombre}.txt`;
             link.click();
+        }
+
+
+        // ==========================================
+        // --- RANKING (Almacenamiento compartido) ---
+        // ==========================================
+        async function guardarEnRanking(nombre, puntos) {
+            try {
+                const key = `rank_${nombre.trim().toLowerCase().replace(/\s+/g,'_')}_${Date.now()}`;
+                await window.storage.set(key, JSON.stringify({ nombre: nombre.trim(), puntos }), true);
+            } catch(e) { console.log('Storage no disponible:', e); }
+        }
+
+        async function obtenerRanking() {
+            try {
+                const result = await window.storage.list('rank_', true);
+                if (!result || !result.keys) return [];
+                const entradas = [];
+                for (const k of result.keys) {
+                    try {
+                        const r = await window.storage.get(k, true);
+                        if (r) entradas.push(JSON.parse(r.value));
+                    } catch(e) {}
+                }
+                return entradas.sort((a,b) => b.puntos - a.puntos).slice(0, 10);
+            } catch(e) { return []; }
+        }
+
+        async function abrirRanking() {
+            // Guardar puntaje actual si tiene nombre y puntos > 0
+            const nombre = document.getElementById("playerName").value.trim() || "Un Viajero";
+            if (score > 0) await guardarEnRanking(nombre, score);
+
+            const modal = document.getElementById("rankingModal");
+            const lista = document.getElementById("rankingList");
+            lista.innerHTML = '<li style="justify-content:center;color:#888">Cargando...</li>';
+            modal.style.display = "flex";
+
+            const top = await obtenerRanking();
+            const medallas = ["🥇","🥈","🥉"];
+
+            if (top.length === 0) {
+                lista.innerHTML = '<li style="justify-content:center;color:#888">¡Todavía no hay puntajes! Sé el primero.</li>';
+            } else {
+                lista.innerHTML = top.map((e, i) =>
+                    `<li>
+                        <span class="rank-pos">${medallas[i] || (i+1)+'.'}</span>
+                        <span class="rank-nombre">${e.nombre}</span>
+                        <span class="rank-pts">${e.puntos} pts</span>
+                    </li>`
+                ).join('');
+            }
+        }
+
+        function cerrarRanking() {
+            document.getElementById("rankingModal").style.display = "none";
         }
 
         // Arrancar el juego
