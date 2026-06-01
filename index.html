@@ -144,8 +144,7 @@
         const imgCorre3 = new Image(); 
         const imgSalta = new Image();  
         const imgChoca = new Image();  
-        const imgFondoLvl1 = new Image();
-        const imgFondoLvl2 = new Image();
+        const fondosNivel = Array.from({length:10}, ()=>new Image());
         const imgChiperita = new Image();
 
 
@@ -155,8 +154,7 @@
         imgCorre3.src = 'chipa_run_C.png';
         imgSalta.src  = 'chipa_jump.png';
         imgChoca.src  = 'chipa_crash.png';
-        imgFondoLvl1.src = 'fondo_nivel1.png';
-        imgFondoLvl2.src = 'fondo_nivel2.png';
+        for(let i=0;i<10;i++){ fondosNivel[i].src = `fondo_nivel${i+1}.png`; }
         imgChiperita.src = 'Chiperitas%20atrapa%20Chipas1.png';
 
         // Tamaño fijo de la chiperitas
@@ -169,28 +167,33 @@
         let estadoJuego = 'INICIO'; 
 
         let chipa = { 
-            x: 80, y: 350 - TAMAÑO_CHIPA, ancho: TAMAÑO_CHIPA, alto: TAMAÑO_CHIPA,
+            x: 80, y: 340 - TAMAÑO_CHIPA, ancho: TAMAÑO_CHIPA, alto: TAMAÑO_CHIPA,
             vy: 0, gravedad: 1.5, salto: -21, enElSuelo: true, // Corregido: Arranca en el suelo
             frameActual: 0, timerAnimacion: 0
         };
 
-        let obstaculo = { x: 900, y: 310, ancho: 40, alto: 40, velocidadActual: 6 };
+        // Sistema de obstáculos múltiples
+        let velocidadJuego = 7;
+        let obstaculos = [{ x: 950, y: 340 - 75 }];
+        let distanciaMinima = 300;  // separación mínima entre grupos
 
         let score = 0;
         let nivel = 1;
         let timerAnuncioNivel = 0;
 
         const configuracionNiveles = {
-            1: { nombre: "Nivel 1: Salida de Asunción", fondo: "#e0f7fa", velocidad: 6 },
-            2: { nombre: "Nivel 2: Cerros de Paraguarí", fondo: "#fff9c4", velocidad: 7.2 },
-            3: { nombre: "Nivel 3: Cruce Coronel Oviedo", fondo: "#ffe0b2", velocidad: 8.5 },
-            4: { nombre: "Nivel 4: Ka'akupé bajo la lluvia", fondo: "#b0bec5", velocidad: 9.8 },
-            5: { nombre: "Nivel 5: Camino a Villarrica", fondo: "#c8e6c9", velocidad: 11 },
-            6: { nombre: "Nivel 6: Pasando por Caazapá", fondo: "#d1c4e9", velocidad: 12.2 },
-            7: { nombre: "Nivel 7: San Cosme y Damián", fondo: "#ffccbc", velocidad: 13.5 },
-            8: { nombre: "Nivel 8: Costanera de Encarnación", fondo: "#bbdefb", velocidad: 14.8 },
-            9: { nombre: "Nivel 9: Ruta Transchaco desértica", fondo: "#cfd8dc", velocidad: 16 },
-            10: { nombre: "Nivel 10: ¡Llegada a Filadelfia!", fondo: "#b2dfdb", velocidad: 17.5 }
+            // velocidad: px/frame | distMin: espacio mínimo entre obstáculos
+            // probDoble: chance de que aparezcan 2 juntos | probTriple: chance de 3
+            1: { nombre:"Nivel 1: Palacio de López",          velocidad:5,    distMin:320, probDoble:0.00, probTriple:0.00 },
+            2: { nombre:"Nivel 2: Costanera",                 velocidad:6.5,  distMin:290, probDoble:0.10, probTriple:0.00 },
+            3: { nombre:"Nivel 3: Teatro",                    velocidad:8,    distMin:260, probDoble:0.20, probTriple:0.00 },
+            4: { nombre:"Nivel 4: Panteón de los Héroes",     velocidad:9.5,  distMin:240, probDoble:0.25, probTriple:0.05 },
+            5: { nombre:"Nivel 5: Catedral",                  velocidad:11,   distMin:220, probDoble:0.30, probTriple:0.10 },
+            6: { nombre:"Nivel 6: Casa de la Independencia",  velocidad:12.5, distMin:200, probDoble:0.35, probTriple:0.15 },
+            7: { nombre:"Nivel 7: Areguá",                    velocidad:14,   distMin:185, probDoble:0.40, probTriple:0.20 },
+            8: { nombre:"Nivel 8: Encarnación",               velocidad:15.5, distMin:170, probDoble:0.45, probTriple:0.25 },
+            9: { nombre:"Nivel 9: México",                    velocidad:17,   distMin:155, probDoble:0.50, probTriple:0.30 },
+            10:{ nombre:"Nivel 10: Tatakuá",                  velocidad:19,   distMin:140, probDoble:0.55, probTriple:0.35 }
         };
 
         // ==========================================
@@ -220,41 +223,56 @@
             score = 0;
             nivel = 1;
             estadoJuego = 'INICIO';
-            chipa.y = 350 - TAMAÑO_CHIPA;
+            chipa.y = 340 - TAMAÑO_CHIPA;
             chipa.vy = 0;
             chipa.enElSuelo = true; // Corregido: Resetea en el suelo
             timerAnuncioNivel = 0;
-            obstaculo.velocidadActual = configuracionNiveles[1].velocidad;
-            reposicionarObstaculo();
+            velocidadJuego = configuracionNiveles[1].velocidad;
+            obstaculos = [{ x: 950, y: 340 - ALTO_CHIPERITA }];
         }
 
-        function reposicionarObstaculo() {
-            obstaculo.x = canvas.width + Math.random() * 450 + 150;
-            obstaculo.ancho = 35 + Math.random() * 25;
-            obstaculo.alto = 35 + Math.random() * 20;
-            obstaculo.y = 350 - ALTO_CHIPERITA;
+        function crearGrupoObstaculos() {
+            const cfg = configuracionNiveles[nivel];
+            const baseX = canvas.width + cfg.distMin + Math.random() * 120;
+            
+            // Separación entre chiperitas: suficiente para que la chipa aterrice y vuelva a saltar
+            // La chipa tarda ~28 frames en saltar y aterrizar → a velocidad máxima (19px) = ~530px
+            // Usamos 240px mínimo (niveles lentos) que se reduce un poco en niveles rápidos
+            const separacion = Math.max(200, 280 - nivel * 8);
+
+            let cantidad = 1;
+            const r = Math.random();
+            if (r < cfg.probTriple) cantidad = 3;
+            else if (r < cfg.probDoble) cantidad = 2;
+
+            obstaculos = [];
+            for (let i = 0; i < cantidad; i++) {
+                obstaculos.push({ x: baseX + i * separacion, y: 340 - ALTO_CHIPERITA });
+            }
         }
+        
+        // alias para compatibilidad
+        function reposicionarObstaculo() { crearGrupoObstaculos(); }
 
         function actualizarDificultad() {
             let nivelAnterior = nivel;
 
-            // Corregido el bug del "node = 3"
-            if (score < 5) nivel = 1;
+            if      (score < 5)  nivel = 1;
             else if (score < 10) nivel = 2;
-            else if (score < 15) nivel = 3; // ¡AQUÍ ESTABA EL ERROR!
-            else if (score < 25) nivel = 4;
-            else if (score < 35) nivel = 5;
-            else if (score < 45) nivel = 6;
-            else if (score < 55) nivel = 7;
-            else if (score < 65) nivel = 8;
-            else if (score < 75) nivel = 9;
-            else nivel = 10;
+            else if (score < 16) nivel = 3;
+            else if (score < 23) nivel = 4;
+            else if (score < 31) nivel = 5;
+            else if (score < 40) nivel = 6;
+            else if (score < 50) nivel = 7;
+            else if (score < 61) nivel = 8;
+            else if (score < 73) nivel = 9;
+            else                 nivel = 10;
 
-            if (nivel !== nivelAnterior && nivel <= 10) {
+            if (nivel !== nivelAnterior) {
                 timerAnuncioNivel = 90;
             }
 
-            obstaculo.velocidadActual = configuracionNiveles[nivel].velocidad;
+            velocidadJuego = configuracionNiveles[nivel].velocidad;
         }
 
         // ==========================================
@@ -265,57 +283,68 @@
                 chipa.vy += chipa.gravedad;
                 chipa.y += chipa.vy;
 
-                const sueloY = 350 - chipa.alto;
+                const sueloY = 340 - chipa.alto;
                 if (chipa.y >= sueloY) { 
                     chipa.y = sueloY;
                     chipa.vy = 0;
                     chipa.enElSuelo = true;
                 }
 
-                obstaculo.x -= obstaculo.velocidadActual;
-                
-                if (obstaculo.x < -obstaculo.ancho) {
+                // Mover todos los obstáculos
+                for (let obs of obstaculos) { obs.x -= velocidadJuego; }
+
+                // Eliminar chiperitas que salieron de pantalla
+                obstaculos = obstaculos.filter(obs => obs.x > -ANCHO_CHIPERITA);
+
+                // Cuando el grupo entero salió → sumar punto y generar nuevo grupo
+                if (obstaculos.length === 0) {
                     score++;
                     actualizarDificultad();
-                    reposicionarObstaculo();
+                    crearGrupoObstaculos();
                 }
 
-                let margenX = chipa.ancho * 0.18; 
-                let margenY = chipa.alto * 0.1;   
-
+                // Colisión con hitbox generosa
+                let margenX = chipa.ancho * 0.30; 
+                let margenY = chipa.alto * 0.25;   
                 let chipaIzquierda = chipa.x + margenX;
-                let chipaDerecha = chipa.x + chipa.ancho - margenX;
-                let chipaArriba = chipa.y + margenY;
-                let chipaAbajo = chipa.y + chipa.alto; 
+                let chipaDerecha   = chipa.x + chipa.ancho - margenX;
+                let chipaArriba    = chipa.y + margenY;
+                let chipaAbajo     = chipa.y + chipa.alto;
 
-                // Hitbox del obstáculo usa el tamaño real de la chiperita
-                let obsAncho = ANCHO_CHIPERITA;
-                let obsAlto = ALTO_CHIPERITA;
+                for (let obs of obstaculos) {
+                    let obsMargen = ANCHO_CHIPERITA * 0.20;
+                    let obsX      = obs.x + obsMargen;
+                    let obsAncho  = ANCHO_CHIPERITA - obsMargen * 2;
+                    let obsAlto   = ALTO_CHIPERITA * 0.80;
 
-                if (chipaIzquierda < obstaculo.x + obsAncho &&
-                    chipaDerecha > obstaculo.x &&
-                    chipaArriba < obstaculo.y + obsAlto &&
-                    chipaAbajo > obstaculo.y) {
-                    estadoJuego = 'GAMEOVER'; 
+                    if (chipaIzquierda < obsX + obsAncho &&
+                        chipaDerecha   > obsX &&
+                        chipaArriba    < obs.y + obsAlto &&
+                        chipaAbajo     > obs.y) {
+                        estadoJuego = 'GAMEOVER';
+                    }
                 }
             }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Dibujar fondo según el nivel
-            if (nivel === 1 && imgFondoLvl1.naturalWidth > 0) {
-                ctx.drawImage(imgFondoLvl1, 0, 0, canvas.width, canvas.height);
-            } else if (nivel === 2 && imgFondoLvl2.naturalWidth > 0) {
-                ctx.drawImage(imgFondoLvl2, 0, 0, canvas.width, canvas.height);
+            const fondoActual = fondosNivel[nivel-1];
+            if (fondoActual && fondoActual.naturalWidth > 0){
+                ctx.drawImage(fondoActual,0,0,canvas.width,canvas.height);
             } else {
-                ctx.fillStyle = configuracionNiveles[nivel].fondo;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle='#e0f7fa';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
             }
 
             ctx.fillStyle = "#555555"; 
-            ctx.fillRect(0, 350, canvas.width, 50);
+            ctx.fillRect(0, 340, canvas.width, 60);
             ctx.fillStyle = "#ffd54f"; 
-            ctx.fillRect(0, 368, canvas.width, 4);
+            ctx.fillRect(0, 358, canvas.width, 4);
+            ctx.fillStyle="#ffd54f";
+            ctx.font="14px Arial";
+            ctx.textAlign="right";
+            ctx.fillText("Matías Brizzio © 2026 Juan Tereré", canvas.width-12, 392);
+            ctx.textAlign="start";
 
             let imagenADibujar = imgCorre1; 
 
@@ -344,18 +373,20 @@
                 ctx.fill();
             }
 
-            // Dibujar obstáculo como chiperitas (tamaño fijo)
-            if (imgChiperita.naturalWidth > 0) {
-                ctx.drawImage(imgChiperita, obstaculo.x, obstaculo.y, ANCHO_CHIPERITA, ALTO_CHIPERITA);
-            } else {
-                ctx.fillStyle = "#e53935";
-                ctx.fillRect(obstaculo.x, obstaculo.y, ANCHO_CHIPERITA, ALTO_CHIPERITA);
+            // Dibujar todas las chiperitas del grupo actual
+            for (let obs of obstaculos) {
+                if (imgChiperita.complete && imgChiperita.naturalWidth > 0) {
+                    ctx.drawImage(imgChiperita, obs.x, obs.y, ANCHO_CHIPERITA, ALTO_CHIPERITA);
+                } else {
+                    ctx.fillStyle = "#e53935";
+                    ctx.fillRect(obs.x, obs.y, ANCHO_CHIPERITA, ALTO_CHIPERITA);
+                }
             }
 
-            ctx.fillStyle = (nivel === 4 || nivel === 9) ? "#ffffff" : "#000000"; 
+            ctx.fillStyle = "#000000"; 
             ctx.font = "bold 15px Arial";
             ctx.fillText(configuracionNiveles[nivel].nombre, 20, 30);
-            ctx.fillText("Chipas Salvadas: " + score, 20, 55);
+            ctx.fillText("Puntos: " + score, 20, 55);
 
             if (timerAnuncioNivel > 0 && estadoJuego === 'JUGANDO') {
                 ctx.save();
@@ -381,7 +412,7 @@
                 ctx.textAlign = "center";
                 ctx.fillText("¡PREPARATE!", canvas.width / 2, 170);
                 ctx.font = "18px Arial";
-                ctx.fillText("Presioná la barra ESPACIO para empezar a viajar", canvas.width / 2, 220);
+                ctx.fillText("Presioná la barra ESPACIO para escaparte", canvas.width / 2, 220);
                 ctx.textAlign = "start";
             }
             
@@ -421,7 +452,7 @@
 
         function obtenerMensaje() {
             let nombre = document.getElementById("playerName").value || "Un Viajero";
-            return encodeURIComponent(`¡${nombre} salvó ${score} chipas en el juego "La Chipa Viajera"! 🥮🇵🇾 ¿Podés superarlo?`);
+            return encodeURIComponent(`¡${nombre} salvó ${score} chipas en el juego La Chipa Viajera! ¿Podés superarlo? Jugá aquí: [LINK_DEL_JUEGO]`);
         }
 
         function compartir(plataforma) {
