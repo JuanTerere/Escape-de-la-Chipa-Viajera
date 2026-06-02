@@ -611,7 +611,7 @@
 
         function obtenerMensaje() {
             let nombre = document.getElementById("playerName").value || "Un Viajero";
-            return encodeURIComponent(`¡${nombre} sumó ${score} puntos en el juego de La Chipa Viajera! 🫓🌍 ¿Podés superarlo? Jugá acá: https://juanterere.github.io/Escape-de-la-Chipa-Viajera/`);
+            return encodeURIComponent(`¡${nombre} sumó ${score} puntos en el juego de La Chipa Viajera! ¿Podés superarlo? Jugá acá: https://juanterere.github.io/Escape-de-la-Chipa-Viajera/`);
         }
 
         function compartir(plataforma) {
@@ -621,7 +621,11 @@
             if (plataforma === 'whatsapp') {
                 url = `https://api.whatsapp.com/send?text=${texto}`;
             } else if (plataforma === 'facebook') {
-                url = `https://www.facebook.com/sharer/sharer.php?u=https://lachipaviajera.com&quote=${texto}`;
+                // Facebook sharer con el link del juego y mensaje en quote
+                const fbLink = encodeURIComponent("https://juanterere.github.io/Escape-de-la-Chipa-Viajera/");
+                const nombre2 = document.getElementById("playerName").value.trim() || "Un Viajero";
+                const fbMensaje = encodeURIComponent(`¡${nombre2} sumó ${score} puntos en el juego de La Chipa Viajera! ¿Podés superarlo? Jugá acá:`);
+                url = `https://www.facebook.com/sharer/sharer.php?u=${fbLink}&quote=${fbMensaje}`;
             } else if (plataforma === 'email') {
                 url = `mailto:?subject=¡Mi Logro en La Chipa Viajera!&body=${texto}`;
             }
@@ -644,28 +648,31 @@
                 // Dibujar la imagen de fondo
                 cx.drawImage(certImg, 0, 0);
 
-                // Posición del rectángulo verde (aprox. 8% x, 67% y, 46% w, 18% h)
+                // Rectángulo verde: 8% x, 63% y, 46% w, 14% h
+                // (subido para no tapar el "¡Gracias por jugar!" que empieza en ~78%)
                 const rx = c.width  * 0.08;
-                const ry = c.height * 0.67;
+                const ry = c.height * 0.635;
                 const rw = c.width  * 0.46;
-                const rh = c.height * 0.18;
+                const rh = c.height * 0.135;
 
-                // Fondo del rectángulo (tapamos el verde con uno oscuro semitransparente)
-                cx.fillStyle = "rgba(0, 60, 0, 0.75)";
+                // Tapamos el verde con fondo oscuro
+                cx.fillStyle = "rgba(0, 50, 0, 0.82)";
                 cx.roundRect(rx, ry, rw, rh, 14);
                 cx.fill();
 
-                // Nombre del jugador
+                const cx_center = rx + rw / 2;
+
+                // Nombre del jugador (40% del alto del rect desde arriba)
                 cx.fillStyle = "#ffffff";
-                cx.font = `bold ${c.width * 0.055}px Impact, sans-serif`;
+                cx.font = `bold ${c.width * 0.052}px Impact, sans-serif`;
                 cx.textAlign = "center";
                 cx.textBaseline = "middle";
-                cx.fillText(nombre, rx + rw / 2, ry + rh * 0.36);
+                cx.fillText(nombre, cx_center, ry + rh * 0.38);
 
-                // Puntos
+                // Puntos (72% del alto del rect)
                 cx.fillStyle = "#ffd54f";
-                cx.font = `bold ${c.width * 0.065}px Impact, sans-serif`;
-                cx.fillText(`${score} PUNTOS`, rx + rw / 2, ry + rh * 0.72);
+                cx.font = `bold ${c.width * 0.060}px Impact, sans-serif`;
+                cx.fillText(`${score} PUNTOS`, cx_center, ry + rh * 0.74);
 
                 cx.textAlign = "start";
                 cx.textBaseline = "alphabetic";
