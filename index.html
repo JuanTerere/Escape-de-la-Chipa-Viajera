@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>La Chipa Viajera - Edición Completa</title>
     <style>
         body {
@@ -27,6 +27,30 @@
             border: 4px solid #3e2723;
             background-color: #e0f7fa;
             display: block;
+            max-width: 100%;
+            touch-action: none; /* evita scroll al tocar el canvas */
+        }
+
+        #gameContainer {
+            touch-action: none;
+        }
+
+        /* Botón táctil de COMPARTIR en móvil (Game Over) */
+        #btnCompartirMovil {
+            display: none;
+            position: absolute;
+            bottom: 60px;
+            right: 16px;
+            background: #f57c00;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
 
         #shareScreen {
@@ -179,6 +203,8 @@
         </div>
     </div>
 
+    <button id="btnCompartirMovil" onclick="abrirCompartir()">🏆 Compartir logro</button>
+
     <!-- Modal Ranking -->
     <div id="rankingModal">
         <div id="rankingBox">
@@ -188,7 +214,11 @@
         </div>
     </div>
 
-    <script type="module">
+    <!-- Firebase compat (funciona como script normal, sin import) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         ctx.imageSmoothingEnabled = true;
@@ -259,24 +289,42 @@
         // ==========================================
         // --- CONTROL DE TECLADO ---
         // ==========================================
-        window.addEventListener("keydown", (e) => {
+        // Acción principal: saltar / arrancar / reiniciar
+        function accionPrincipal() {
             if (document.getElementById("shareScreen").style.display === "flex") return;
+            if (document.getElementById("rankingModal").style.display === "flex") return;
 
-            if (e.code === "Space") {
-                if (estadoJuego === 'GAMEOVER') {
-                    prepararPrimerNivel();
-                } else if (estadoJuego === 'INICIO') {
-                    estadoJuego = 'JUGANDO';
-                    timerAnuncioNivel = 90;
-                } else if (estadoJuego === 'JUGANDO' && chipa.enElSuelo) {
-                    chipa.vy = chipa.salto;
-                    chipa.enElSuelo = false;
-                }
+            if (estadoJuego === 'GAMEOVER') {
+                prepararPrimerNivel();
+            } else if (estadoJuego === 'INICIO') {
+                estadoJuego = 'JUGANDO';
+                timerAnuncioNivel = 90;
+            } else if (estadoJuego === 'JUGANDO' && chipa.enElSuelo) {
+                chipa.vy = chipa.salto;
+                chipa.enElSuelo = false;
             }
+        }
 
+        // Teclado (PC)
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") {
+                e.preventDefault();
+                accionPrincipal();
+            }
             if (e.key.toLowerCase() === 'c' && estadoJuego === 'GAMEOVER') {
                 abrirCompartir();
             }
+        });
+
+        // Toque (móvil) — cualquier toque en el canvas = acción principal
+        canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            accionPrincipal();
+        }, { passive: false });
+
+        // Clic con mouse también (por si acaso)
+        canvas.addEventListener("mousedown", (e) => {
+            accionPrincipal();
         });
 
         function prepararPrimerNivel() {
@@ -475,7 +523,7 @@
                 ctx.fillText("¡PREPARATE!", canvas.width / 2, 170);
                 ctx.letterSpacing = "0px";
                 ctx.font = "18px Arial";
-                ctx.fillText("Presioná la barra ESPACIO para escaparte", canvas.width / 2, 220);
+                ctx.fillText("Tocá la pantalla o presioná ESPACIO para escaparte", canvas.width / 2, 220);
                 ctx.textAlign = "start";
             }
             
@@ -486,16 +534,20 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.font = "bold 26px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText("Chipas salvadas: " + score, canvas.width / 2, 150);
+                ctx.fillText("¡Sumaste " + score + " puntos!", canvas.width / 2, 150);
                 
                 ctx.font = "18px Arial";
                 ctx.fillStyle = "#e0e0e0";
-                ctx.fillText("Presioná ESPACIO para reiniciar", canvas.width / 2, 210);
+                ctx.fillText("Tocá la pantalla para reiniciar", canvas.width / 2, 210);
                 
                 ctx.fillStyle = "#ffd54f";
                 ctx.font = "bold 18px Arial";
-                ctx.fillText("Presioná la tecla 'C' para COMPARTIR tu logro", canvas.width / 2, 260);
-                ctx.textAlign = "start"; 
+                ctx.fillText("Presioná 'C' o el botón naranja para compartir", canvas.width / 2, 260);
+                ctx.textAlign = "start";
+
+                document.getElementById("btnCompartirMovil").style.display = "block";
+            } else {
+                document.getElementById("btnCompartirMovil").style.display = "none";
             }
 
             requestAnimationFrame(loop);
@@ -548,26 +600,22 @@
         // ==========================================
         // --- RANKING con Firebase Firestore ---
         // ==========================================
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit }
-            from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
-
+        // Firebase compat — funciona sin import/module
         const firebaseConfig = {
             apiKey: "AIzaSyB10bUqX1pgVevX2bEHjEjj0XaxaEby3yE",
             authDomain: "la-chipa-viajera.firebaseapp.com",
             projectId: "la-chipa-viajera",
             storageBucket: "la-chipa-viajera.firebasestorage.app",
             messagingSenderId: "407996707990",
-            appId: "1:407996707990:web:ec2c56f42a05b67cd13eb7",
-            measurementId: "G-248HFSHRSL"
+            appId: "1:407996707990:web:ec2c56f42a05b67cd13eb7"
         };
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const db = getFirestore(firebaseApp);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         async function guardarEnRanking(nombre, puntos) {
             try {
-                await addDoc(collection(db, "ranking"), {
+                await db.collection("ranking").add({
                     nombre: nombre.trim(),
                     puntos: puntos,
                     fecha: new Date()
@@ -577,8 +625,10 @@
 
         async function obtenerRanking() {
             try {
-                const q = query(collection(db, "ranking"), orderBy("puntos", "desc"), limit(10));
-                const snap = await getDocs(q);
+                const snap = await db.collection("ranking")
+                    .orderBy("puntos", "desc")
+                    .limit(10)
+                    .get();
                 return snap.docs.map(d => d.data());
             } catch(e) { console.error("Error leyendo ranking:", e); return []; }
         }
