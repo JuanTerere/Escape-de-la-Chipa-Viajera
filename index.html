@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        /* Forzar landscape en móvil */
+        @media screen and (orientation: portrait) and (max-width: 768px) {
+            #rotateMsg {
+                display: flex !important;
+            }
+            #gameContainer {
+                display: none !important;
+            }
+        }
+    </style>
     <title>La Chipa Viajera - Edición Completa</title>
     <style>
         body {
@@ -28,7 +39,23 @@
             background-color: #e0f7fa;
             display: block;
             max-width: 100%;
-            touch-action: none; /* evita scroll al tocar el canvas */
+            height: auto;
+            touch-action: none;
+        }
+        @media screen and (max-width: 768px) and (orientation: landscape) {
+            body { margin: 0; padding: 0; background: #000; }
+            #gameContainer {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100vw;
+                height: 100vh;
+            }
+            canvas {
+                width: 100vw !important;
+                height: auto !important;
+                max-height: 100vh;
+            }
         }
 
         #gameContainer {
@@ -178,6 +205,23 @@
 </head>
 <body>
 
+    <!-- Mensaje para rotar el celular -->
+    <div id="rotateMsg" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:#1a1a1a; color:white; flex-direction:column; align-items:center;
+        justify-content:center; z-index:9999; font-family:Arial,sans-serif; text-align:center;">
+        <div style="font-size:64px; margin-bottom:20px; animation: rotar 2s infinite;">📱</div>
+        <p style="font-size:22px; font-weight:bold; color:#ffd54f;">¡Girá el celular!</p>
+        <p style="font-size:16px; color:#ccc; margin-top:8px;">El juego se juega en horizontal</p>
+        <style>
+            @keyframes rotar {
+                0%   { transform: rotate(0deg); }
+                40%  { transform: rotate(90deg); }
+                60%  { transform: rotate(90deg); }
+                100% { transform: rotate(0deg); }
+            }
+        </style>
+    </div>
+
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="400"></canvas>
 
@@ -195,7 +239,7 @@
                     <button class="btn btn-ws" onclick="compartir('whatsapp')">WhatsApp</button>
                     <button class="btn btn-fb" onclick="compartir('facebook')">Facebook</button>
                     <button class="btn btn-em" onclick="compartir('email')">Correo</button>
-                    <button class="btn btn-dl" onclick="descargarLogro()">Descargar Info</button>
+                    <button class="btn btn-dl" onclick="descargarLogro()">📜 Certificado</button>
                     <button class="btn btn-rank" onclick="abrirRanking()">🏆 Ver Ranking</button>
                     <button class="btn btn-close" onclick="cerrarCompartir()">Volver al Juego</button>
                 </div>
@@ -567,7 +611,7 @@
 
         function obtenerMensaje() {
             let nombre = document.getElementById("playerName").value || "Un Viajero";
-            return encodeURIComponent(`¡${nombre} sumó ${score} puntos en La Chipa Viajera! 🫓🌍 ¿Podés superarme? Jugá acá: https://juanterere.github.io/Escape-de-la-Chipa-Viajera/`);
+            return encodeURIComponent(`¡${nombre} sumó ${score} puntos en el juego de La Chipa Viajera! 🫓🌍 ¿Podés superarlo? Jugá acá: https://juanterere.github.io/Escape-de-la-Chipa-Viajera/`);
         }
 
         function compartir(plataforma) {
@@ -586,14 +630,55 @@
         }
 
         function descargarLogro() {
-            let nombre = document.getElementById("playerName").value || "Un Viajero";
-            let contenido = `--- CERTIFICADO DE LA CHIPA VIAJERA ---\n\nFelicitaciones ${nombre}.\nSumaste un total de: ${score} puntos en La Chipa Viajera.\n\n¡Gracias por jugar!`;
-            
-            let blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
-            let link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `Logro_ChipaViajera_${nombre}.txt`;
-            link.click();
+            const nombre = document.getElementById("playerName").value.trim() || "Un Viajero";
+            const certImg = new Image();
+            certImg.crossOrigin = "anonymous";
+            certImg.src = "Certificado%20de%20puntos.jpg";
+            certImg.onload = function() {
+                // Crear canvas del tamaño de la imagen
+                const c = document.createElement("canvas");
+                c.width  = certImg.naturalWidth;
+                c.height = certImg.naturalHeight;
+                const cx = c.getContext("2d");
+
+                // Dibujar la imagen de fondo
+                cx.drawImage(certImg, 0, 0);
+
+                // Posición del rectángulo verde (aprox. 8% x, 67% y, 46% w, 18% h)
+                const rx = c.width  * 0.08;
+                const ry = c.height * 0.67;
+                const rw = c.width  * 0.46;
+                const rh = c.height * 0.18;
+
+                // Fondo del rectángulo (tapamos el verde con uno oscuro semitransparente)
+                cx.fillStyle = "rgba(0, 60, 0, 0.75)";
+                cx.roundRect(rx, ry, rw, rh, 14);
+                cx.fill();
+
+                // Nombre del jugador
+                cx.fillStyle = "#ffffff";
+                cx.font = `bold ${c.width * 0.055}px Impact, sans-serif`;
+                cx.textAlign = "center";
+                cx.textBaseline = "middle";
+                cx.fillText(nombre, rx + rw / 2, ry + rh * 0.36);
+
+                // Puntos
+                cx.fillStyle = "#ffd54f";
+                cx.font = `bold ${c.width * 0.065}px Impact, sans-serif`;
+                cx.fillText(`${score} PUNTOS`, rx + rw / 2, ry + rh * 0.72);
+
+                cx.textAlign = "start";
+                cx.textBaseline = "alphabetic";
+
+                // Descargar
+                const link = document.createElement("a");
+                link.href = c.toDataURL("image/jpeg", 0.92);
+                link.download = `Certificado_ChipaViajera_${nombre}.jpg`;
+                link.click();
+            };
+            certImg.onerror = function() {
+                alert("No se encontró el archivo 'Certificado de puntos.jpg'. Verificá que esté en la carpeta del juego.");
+            };
         }
 
 
