@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>La Chipa Viajera - Edición Móvil</title>
+    <style>
+        /* Forzar landscape en móvil */
+        @media screen and (orientation: portrait) and (max-width: 768px) {
+            #rotateMsg {
+                display: flex !important;
+            }
+            #gameContainer {
+                display: none !important;
+            }
+        }
+    </style>
+    <title>La Chipa Viajera - Edición Completa</title>
     <style>
         body {
             margin: 0;
@@ -14,48 +25,67 @@
             height: 100vh;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
-            /* Evita que el celular haga zoom al tocar rápido */
-            touch-action: none; 
         }
         
         #gameContainer {
             position: relative;
-            /* El contenedor se adapta al ancho de la pantalla, hasta un máximo de 800px */
-            width: 100%;
-            max-width: 800px;
-            /* Mantiene la proporción original de 800x400 (2 a 1) */
-            aspect-ratio: 2 / 1; 
+            width: 800px;
+            height: 400px;
             box-shadow: 0px 10px 30px rgba(0,0,0,0.7);
-            background-color: #e0f7fa;
         }
 
-        /* El canvas ahora ocupa el 100% de su contenedor responsivo */
         canvas {
             border: 4px solid #3e2723;
-            box-sizing: border-box;
-            width: 100%;
-            height: 100%;
+            background-color: #e0f7fa;
             display: block;
+            max-width: 100%;
+            height: auto;
+            touch-action: none;
+        }
+        @media screen and (max-width: 900px) and (orientation: landscape) {
+            html, body { margin: 0; padding: 0; background: #000; overflow: hidden; height: 100%; }
+            #gameContainer {
+                display: flex !important;
+                justify-content: center;
+                align-items: center;
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+                padding: 0;
+                margin: 0;
+            }
+            canvas {
+                /* Fit completo: se ve todo el canvas sin recortar */
+                width: auto !important;
+                height: 100vh !important;
+                max-width: 100vw !important;
+                max-height: 100vh !important;
+                display: block;
+            }
         }
 
-        /* Botón de Pantalla Completa */
-        #btnFullscreen {
+        #gameContainer {
+            touch-action: none;
+        }
+
+        /* Botón táctil de COMPARTIR en móvil (Game Over) */
+        #btnCompartirMovil {
+            display: none;
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.6);
+            bottom: 60px;
+            right: 16px;
+            background: #f57c00;
             color: white;
-            border: 2px solid #ffd54f;
-            border-radius: 8px;
-            padding: 8px 12px;
+            font-size: 15px;
             font-weight: bold;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 30px;
             cursor: pointer;
             z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
 
-        #btnFullscreen:hover { background: rgba(0, 0, 0, 0.9); }
-
-        /* Pantalla flotante de Compartir Logro */
         #shareScreen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -66,54 +96,148 @@
             flex-direction: row;
             align-items: center;
             justify-content: space-around;
-            z-index: 20;
         }
 
-        .share-left { text-align: center; width: 45%; }
+        .share-left {
+            text-align: center;
+            width: 45%;
+        }
+
         .share-left img {
-            max-width: 100%; max-height: 220px;
-            border-radius: 10px; border: 3px solid #ffd54f;
+            max-width: 100%;
+            max-height: 220px;
+            border-radius: 10px;
+            border: 3px solid #ffd54f;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
-        .share-right { width: 45%; display: flex; flex-direction: column; gap: 12px; }
-        .share-right h2 { margin: 0; color: #ffd54f; font-family: 'Impact', sans-serif; letter-spacing: 1px; }
-        .share-right input {
-            padding: 10px; font-size: 16px; border: 2px solid #ffd54f;
-            background-color: #222; color: white; border-radius: 5px; width: 100%; box-sizing: border-box;
+        .share-right {
+            width: 45%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .btn { padding: 10px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; text-align: center; color: white; }
+        .share-right h2 {
+            margin: 0;
+            color: #ffd54f;
+            font-family: 'Impact', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .share-right input {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ffd54f;
+            background-color: #222;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+            color: white;
+        }
         .btn-ws { background-color: #25D366; }
         .btn-fb { background-color: #1877F2; }
         .btn-em { background-color: #ea4335; }
         .btn-dl { background-color: #607d8b; }
         .btn-close { background-color: #9e9e9e; grid-column: span 2; margin-top: 5px;}
+        .btn:hover { filter: brightness(1.2); }
+        .btn-rank { background-color: #f57c00; grid-column: span 2; }
 
-        /* Ajustes para celulares en la pantalla de compartir */
-        @media (max-width: 600px) {
-            #shareScreen { flex-direction: column; padding: 10px; overflow-y: auto; }
-            .share-left, .share-right { width: 100%; }
-            .share-left img { max-height: 150px; }
-            #btnFullscreen { font-size: 12px; padding: 5px 8px; }
+        /* Modal Ranking */
+        #rankingModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
         }
+        #rankingBox {
+            background: #1a1a1a;
+            border: 3px solid #ffd54f;
+            border-radius: 12px;
+            padding: 30px 40px;
+            min-width: 340px;
+            max-width: 420px;
+            text-align: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #rankingBox h2 {
+            color: #ffd54f;
+            font-family: Impact, sans-serif;
+            font-size: 28px;
+            margin: 0 0 16px;
+            letter-spacing: 2px;
+        }
+        #rankingList {
+            list-style: none;
+            padding: 0; margin: 0 0 20px;
+        }
+        #rankingList li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid #333;
+            font-size: 15px;
+        }
+        #rankingList li:first-child { color: #ffd54f; font-weight: bold; font-size: 17px; }
+        #rankingList li:nth-child(2) { color: #c0c0c0; font-weight: bold; }
+        #rankingList li:nth-child(3) { color: #cd7f32; font-weight: bold; }
+        .rank-pos { width: 28px; text-align: left; }
+        .rank-nombre { flex: 1; text-align: left; padding-left: 6px; }
+        .rank-pts { font-weight: bold; color: #ffd54f; }
+        .btn-cerrar-rank { background: #9e9e9e; width: 100%; padding: 10px; border: none;
+            border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-cerrar-rank:hover { filter: brightness(1.2); }
     </style>
 </head>
 <body>
 
+    <!-- Mensaje para rotar el celular -->
+    <div id="rotateMsg" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:#1a1a1a; color:white; flex-direction:column; align-items:center;
+        justify-content:center; z-index:9999; font-family:Arial,sans-serif; text-align:center;">
+        <div style="font-size:64px; margin-bottom:20px; animation: rotar 2s infinite;">📱</div>
+        <p style="font-size:22px; font-weight:bold; color:#ffd54f;">¡Girá el celular!</p>
+        <p style="font-size:16px; color:#ccc; margin-top:8px;">El juego se juega en horizontal</p>
+        <style>
+            @keyframes rotar {
+                0%   { transform: rotate(0deg); }
+                40%  { transform: rotate(90deg); }
+                60%  { transform: rotate(90deg); }
+                100% { transform: rotate(0deg); }
+            }
+        </style>
+    </div>
+
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="400"></canvas>
-        
-        <button id="btnFullscreen" onclick="toggleFullscreen()">🔲 Ampliar</button>
 
         <div id="shareScreen" style="display: none;">
             <div class="share-left">
-                <img src="Chipa Viajera con maletas1.png" alt="Chipa Viajera">
+                <img src="Chipa%20Viajera%20con%20maletas1.png" alt="Chipa Viajera">
                 <p id="txtPuntajeLogro" style="font-size: 18px; margin-top: 10px; font-weight: bold;"></p>
             </div>
             <div class="share-right">
-                <h2>¡COMPARTÍ TU VIAJE!</h2>
+                <h2>¡COMPARTÍ TU LOGRO!</h2>
                 <label for="playerName">Ingresá tu nombre:</label>
                 <input type="text" id="playerName" placeholder="Ej: Juan" value="Un Viajero">
                 
@@ -121,12 +245,28 @@
                     <button class="btn btn-ws" onclick="compartir('whatsapp')">WhatsApp</button>
                     <button class="btn btn-fb" onclick="compartir('facebook')">Facebook</button>
                     <button class="btn btn-em" onclick="compartir('email')">Correo</button>
-                    <button class="btn btn-dl" onclick="descargarLogro()">Descargar Info</button>
+                    <button class="btn btn-dl" onclick="descargarLogro()">📜 Certificado</button>
+                    <button class="btn btn-rank" onclick="abrirRanking()">🏆 Ver Ranking</button>
                     <button class="btn btn-close" onclick="cerrarCompartir()">Volver al Juego</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <button id="btnCompartirMovil" onclick="abrirCompartir()">🏆 Compartir logro</button>
+
+    <!-- Modal Ranking -->
+    <div id="rankingModal">
+        <div id="rankingBox">
+            <h2>🏆 TOP 10 RANKING</h2>
+            <ul id="rankingList"></ul>
+            <button class="btn-cerrar-rank" onclick="cerrarRanking()">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Firebase compat (funciona como script normal, sin import) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -134,54 +274,75 @@
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
+        // ==========================================
         // --- CARGA SEGURA DE ASSETS ---
+        // ==========================================
         const TAMAÑO_CHIPA = 70; 
-        const imgCorre1 = new Image(); const imgCorre2 = new Image(); const imgCorre3 = new Image(); 
-        const imgSalta = new Image();  const imgChoca = new Image();  const imgFondoLvl1 = new Image(); 
 
-        let imagenesCargadas = 0; const totalImagenes = 6;
+        const imgCorre1 = new Image(); 
+        const imgCorre2 = new Image(); 
+        const imgCorre3 = new Image(); 
+        const imgSalta = new Image();  
+        const imgChoca = new Image();  
+        const fondosNivel = Array.from({length:10}, ()=>new Image());
+        const imgChiperita = new Image();
 
-        function iniciarJuego() {
-            imagenesCargadas++;
-            if (imagenesCargadas === totalImagenes) { requestAnimationFrame(loop); }
-        }
 
-        imgCorre1.onload = iniciarJuego; imgCorre1.onerror = iniciarJuego;
-        imgCorre2.onload = iniciarJuego; imgCorre2.onerror = iniciarJuego;
-        imgCorre3.onload = iniciarJuego; imgCorre3.onerror = iniciarJuego;
-        imgSalta.onload = iniciarJuego;  imgSalta.onerror = iniciarJuego;
-        imgChoca.onload = iniciarJuego;  imgChoca.onerror = iniciarJuego;
-        imgFondoLvl1.onload = iniciarJuego; imgFondoLvl1.onerror = iniciarJuego;
+        // Definimos las rutas (Se hace después del onload por seguridad)
+        imgCorre1.src = 'chipa_run_1.png';
+        imgCorre2.src = 'chipa_run_B.png';
+        imgCorre3.src = 'chipa_run_C.png';
+        imgSalta.src  = 'chipa_jump.png';
+        imgChoca.src  = 'chipa_crash.png';
+        for(let i=0;i<10;i++){ fondosNivel[i].src = `fondo_nivel${i+1}.png`; }
+        imgChiperita.src = 'Chiperitas%20atrapa%20Chipas1.png';
 
-        imgCorre1.src = 'chipa_run_1.png'; imgCorre2.src = 'chipa_run_B.png'; imgCorre3.src = 'chipa_run_C.png';
-        imgSalta.src  = 'chipa_jump.png';  imgChoca.src  = 'chipa_crash.png'; imgFondoLvl1.src = 'fondo_nivel1.png';
+        // Tamaño fijo de la chiperitas
+        const ANCHO_CHIPERITA = 55;
+        const ALTO_CHIPERITA = 75;
 
+        // ==========================================
         // --- VARIABLES DE ESTADO ---
+        // ==========================================
         let estadoJuego = 'INICIO'; 
-        let chipa = { x: 80, y: 350 - TAMAÑO_CHIPA, ancho: TAMAÑO_CHIPA, alto: TAMAÑO_CHIPA, vy: 0, gravedad: 1.5, salto: -21, enElSuelo: true, frameActual: 0, timerAnimacion: 0 };
-        let obstaculo = { x: 900, y: 310, ancho: 40, alto: 40, velocidadActual: 6 };
-        let score = 0; let nivel = 1; let timerAnuncioNivel = 0;
 
-        const configuracionNiveles = {
-            1: { nombre: "Nivel 1: Salida de Asunción", fondo: "#e0f7fa", velocidad: 6 },
-            2: { nombre: "Nivel 2: Cerros de Paraguarí", fondo: "#fff9c4", velocidad: 7.2 },
-            3: { nombre: "Nivel 3: Cruce Coronel Oviedo", fondo: "#ffe0b2", velocidad: 8.5 },
-            4: { nombre: "Nivel 4: Ka'akupé bajo la lluvia", fondo: "#b0bec5", velocidad: 9.8 },
-            5: { nombre: "Nivel 5: Camino a Villarrica", fondo: "#c8e6c9", velocidad: 11 },
-            6: { nombre: "Nivel 6: Pasando por Caazapá", fondo: "#d1c4e9", velocidad: 12.2 },
-            7: { nombre: "Nivel 7: San Cosme y Damián", fondo: "#ffccbc", velocidad: 13.5 },
-            8: { nombre: "Nivel 8: Costanera de Encarnación", fondo: "#bbdefb", velocidad: 14.8 },
-            9: { nombre: "Nivel 9: Ruta Transchaco desértica", fondo: "#cfd8dc", velocidad: 16 },
-            10: { nombre: "Nivel 10: ¡Llegada a Filadelfia!", fondo: "#b2dfdb", velocidad: 17.5 }
+        let chipa = { 
+            x: 80, y: 360 - TAMAÑO_CHIPA, ancho: TAMAÑO_CHIPA, alto: TAMAÑO_CHIPA,
+            vy: 0, gravedad: 1.5, salto: -21, enElSuelo: true, // Corregido: Arranca en el suelo
+            frameActual: 0, timerAnimacion: 0
         };
 
-        // --- CONTROLES (TECLADO Y PANTALLA TÁCTIL) ---
-        function procesarAccionJugador(e) {
-            // Evitar que el touch interactúe con el botón de compartir si está abierto
+        // Sistema de obstáculos múltiples
+        let velocidadJuego = 7;
+        let obstaculos = [{ x: 950, y: 360 - ALTO_CHIPERITA }];
+        let distanciaMinima = 300;  // separación mínima entre grupos
+
+        let score = 0;
+        let nivel = 1;
+        let timerAnuncioNivel = 0;
+
+        const configuracionNiveles = {
+            // velocidad: px/frame | distMin: espacio mínimo entre obstáculos
+            // probDoble: chance de que aparezcan 2 juntos | probTriple: chance de 3
+            1: { nombre:"Nivel 1: Palacio de López",          velocidad:5,    distMin:320, probDoble:0.00, probTriple:0.00 },
+            2: { nombre:"Nivel 2: Costanera",                 velocidad:6.5,  distMin:290, probDoble:0.10, probTriple:0.00 },
+            3: { nombre:"Nivel 3: Teatro",                    velocidad:8,    distMin:260, probDoble:0.20, probTriple:0.00 },
+            4: { nombre:"Nivel 4: Panteón de los Héroes",     velocidad:9.5,  distMin:240, probDoble:0.25, probTriple:0.05 },
+            5: { nombre:"Nivel 5: Catedral",                  velocidad:11,   distMin:220, probDoble:0.30, probTriple:0.10 },
+            6: { nombre:"Nivel 6: Casa de la Independencia",  velocidad:12.5, distMin:200, probDoble:0.35, probTriple:0.15 },
+            7: { nombre:"Nivel 7: Areguá",                    velocidad:14,   distMin:185, probDoble:0.40, probTriple:0.20 },
+            8: { nombre:"Nivel 8: Encarnación",               velocidad:15.5, distMin:170, probDoble:0.45, probTriple:0.25 },
+            9: { nombre:"Nivel 9: México",                    velocidad:17,   distMin:155, probDoble:0.50, probTriple:0.30 },
+            10:{ nombre:"Nivel 10: Tatakuá",                  velocidad:19,   distMin:140, probDoble:0.55, probTriple:0.35 }
+        };
+
+        // ==========================================
+        // --- CONTROL DE TECLADO ---
+        // ==========================================
+        // Acción principal: saltar / arrancar / reiniciar
+        function accionPrincipal() {
             if (document.getElementById("shareScreen").style.display === "flex") return;
-            
-            // Si es un evento táctil, previene que la pantalla se deslice
-            if (e.type === "touchstart") e.preventDefault(); 
+            if (document.getElementById("rankingModal").style.display === "flex") return;
 
             if (estadoJuego === 'GAMEOVER') {
                 prepararPrimerNivel();
@@ -194,161 +355,417 @@
             }
         }
 
-        // Escucha la barra espaciadora en PC
+        // Teclado (PC)
         window.addEventListener("keydown", (e) => {
-            if (e.code === "Space") procesarAccionJugador(e);
-            if (e.key.toLowerCase() === 'c' && estadoJuego === 'GAMEOVER') abrirCompartir();
+            if (e.code === "Space") {
+                e.preventDefault();
+                accionPrincipal();
+            }
+            if (e.key.toLowerCase() === 'c' && estadoJuego === 'GAMEOVER') {
+                abrirCompartir();
+            }
         });
 
-        // Escucha el toque en la pantalla del celular
-        window.addEventListener("touchstart", procesarAccionJugador, {passive: false});
+        // Toque (móvil) — cualquier toque en el canvas = acción principal
+        canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            accionPrincipal();
+        }, { passive: false });
 
-        function toggleFullscreen() {
-            let container = document.getElementById("gameContainer");
-            if (!document.fullscreenElement) {
-                container.requestFullscreen().catch(err => {
-                    alert(`Error intentando abrir pantalla completa: ${err.message}`);
-                });
-            } else {
-                document.exitFullscreen();
+        // Clic con mouse también (por si acaso)
+        canvas.addEventListener("mousedown", (e) => {
+            accionPrincipal();
+        });
+
+        function prepararPrimerNivel() {
+            score = 0;
+            nivel = 1;
+            estadoJuego = 'INICIO';
+            chipa.y = 340 - TAMAÑO_CHIPA;
+            chipa.vy = 0;
+            chipa.enElSuelo = true; // Corregido: Resetea en el suelo
+            timerAnuncioNivel = 0;
+            velocidadJuego = configuracionNiveles[1].velocidad;
+            obstaculos = [{ x: 950, y: 360 - ALTO_CHIPERITA }];
+        }
+
+        function crearGrupoObstaculos() {
+            const cfg = configuracionNiveles[nivel];
+            const baseX = canvas.width + cfg.distMin + Math.random() * 120;
+            
+            // Separación entre chiperitas: suficiente para que la chipa aterrice y vuelva a saltar
+            // La chipa tarda ~28 frames en saltar y aterrizar → a velocidad máxima (19px) = ~530px
+            // Usamos 240px mínimo (niveles lentos) que se reduce un poco en niveles rápidos
+            const separacion = Math.max(200, 280 - nivel * 8);
+
+            let cantidad = 1;
+            const r = Math.random();
+            if (r < cfg.probTriple) cantidad = 3;
+            else if (r < cfg.probDoble) cantidad = 2;
+
+            obstaculos = [];
+            for (let i = 0; i < cantidad; i++) {
+                obstaculos.push({ x: baseX + i * separacion, y: 360 - ALTO_CHIPERITA });
             }
         }
-
-        // --- LÓGICA DEL JUEGO ---
-        function prepararPrimerNivel() {
-            score = 0; nivel = 1; estadoJuego = 'INICIO';
-            chipa.y = 350 - TAMAÑO_CHIPA; chipa.vy = 0; chipa.enElSuelo = true;
-            timerAnuncioNivel = 0; obstaculo.velocidadActual = configuracionNiveles[1].velocidad;
-            reposicionarObstaculo();
-        }
-
-        function reposicionarObstaculo() {
-            obstaculo.x = canvas.width + Math.random() * 450 + 150;
-            obstaculo.ancho = 35 + Math.random() * 25;
-            obstaculo.alto = 35 + Math.random() * 20;
-            obstaculo.y = 350 - obstaculo.alto;
-        }
+        
+        // alias para compatibilidad
+        function reposicionarObstaculo() { crearGrupoObstaculos(); }
 
         function actualizarDificultad() {
             let nivelAnterior = nivel;
-            if (score < 5) nivel = 1; else if (score < 10) nivel = 2; else if (score < 15) nivel = 3; 
-            else if (score < 25) nivel = 4; else if (score < 35) nivel = 5; else if (score < 45) nivel = 6; 
-            else if (score < 55) nivel = 7; else if (score < 65) nivel = 8; else if (score < 75) nivel = 9; else nivel = 10;
 
-            if (nivel !== nivelAnterior && nivel <= 10) timerAnuncioNivel = 90;
-            obstaculo.velocidadActual = configuracionNiveles[nivel].velocidad;
+            if      (score < 5)  nivel = 1;
+            else if (score < 10) nivel = 2;
+            else if (score < 16) nivel = 3;
+            else if (score < 23) nivel = 4;
+            else if (score < 31) nivel = 5;
+            else if (score < 40) nivel = 6;
+            else if (score < 50) nivel = 7;
+            else if (score < 61) nivel = 8;
+            else if (score < 73) nivel = 9;
+            else                 nivel = 10;
+
+            if (nivel !== nivelAnterior) {
+                timerAnuncioNivel = 90;
+            }
+
+            velocidadJuego = configuracionNiveles[nivel].velocidad;
         }
 
+        // ==========================================
         // --- BUCLE DE JUEGO ---
+        // ==========================================
         function loop() {
             if (estadoJuego === 'JUGANDO') {
-                chipa.vy += chipa.gravedad; chipa.y += chipa.vy;
-                const sueloY = 350 - chipa.alto;
-                if (chipa.y >= sueloY) { chipa.y = sueloY; chipa.vy = 0; chipa.enElSuelo = true; }
+                chipa.vy += chipa.gravedad;
+                chipa.y += chipa.vy;
 
-                obstaculo.x -= obstaculo.velocidadActual;
-                if (obstaculo.x < -obstaculo.ancho) { score++; actualizarDificultad(); reposicionarObstaculo(); }
+                const sueloY = 360 - chipa.alto;
+                if (chipa.y >= sueloY) { 
+                    chipa.y = sueloY;
+                    chipa.vy = 0;
+                    chipa.enElSuelo = true;
+                }
 
-                let margenX = chipa.ancho * 0.18; let margenY = chipa.alto * 0.1;   
-                if (chipa.x + margenX < obstaculo.x + obstaculo.ancho && chipa.x + chipa.ancho - margenX > obstaculo.x &&
-                    chipa.y + margenY < obstaculo.y + obstaculo.alto && chipa.y + chipa.alto > obstaculo.y) {
-                    estadoJuego = 'GAMEOVER'; 
+                // Mover todos los obstáculos
+                for (let obs of obstaculos) { obs.x -= velocidadJuego; }
+
+                // Eliminar chiperitas que salieron de pantalla
+                obstaculos = obstaculos.filter(obs => obs.x > -ANCHO_CHIPERITA);
+
+                // Cuando el grupo entero salió → sumar punto y generar nuevo grupo
+                if (obstaculos.length === 0) {
+                    score++;
+                    actualizarDificultad();
+                    crearGrupoObstaculos();
+                }
+
+                // Colisión con hitbox generosa
+                let margenX = chipa.ancho * 0.30; 
+                let margenY = chipa.alto * 0.25;   
+                let chipaIzquierda = chipa.x + margenX;
+                let chipaDerecha   = chipa.x + chipa.ancho - margenX;
+                let chipaArriba    = chipa.y + margenY;
+                let chipaAbajo     = chipa.y + chipa.alto;
+
+                for (let obs of obstaculos) {
+                    let obsMargen = ANCHO_CHIPERITA * 0.20;
+                    let obsX      = obs.x + obsMargen;
+                    let obsAncho  = ANCHO_CHIPERITA - obsMargen * 2;
+                    let obsAlto   = ALTO_CHIPERITA * 0.80;
+
+                    if (chipaIzquierda < obsX + obsAncho &&
+                        chipaDerecha   > obsX &&
+                        chipaArriba    < obs.y + obsAlto &&
+                        chipaAbajo     > obs.y) {
+                        estadoJuego = 'GAMEOVER';
+                    }
                 }
             }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (nivel === 1 && imgFondoLvl1.naturalWidth > 0) {
-                ctx.drawImage(imgFondoLvl1, 0, 0, canvas.width, canvas.height);
+            const fondoActual = fondosNivel[nivel-1];
+            if (fondoActual && fondoActual.naturalWidth > 0){
+                ctx.drawImage(fondoActual,0,0,canvas.width,canvas.height);
             } else {
-                ctx.fillStyle = configuracionNiveles[nivel].fondo; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle='#e0f7fa';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
             }
 
-            ctx.fillStyle = "#555555"; ctx.fillRect(0, 350, canvas.width, 50);
-            ctx.fillStyle = "#ffd54f"; ctx.fillRect(0, 368, canvas.width, 4);
+            ctx.fillStyle = "#555555"; 
+            ctx.fillRect(0, 360, canvas.width, 40);
+            ctx.fillStyle = "#ffd54f"; 
+            ctx.fillRect(0, 362, canvas.width, 4);
+            ctx.fillStyle="#ffd54f";
+            ctx.font="14px Arial";
+            ctx.textAlign="right";
+            ctx.fillText("Matías Brizzio © 2026 Juan Tereré", canvas.width-12, 395);
+            ctx.textAlign="start";
 
             let imagenADibujar = imgCorre1; 
-            if (estadoJuego === 'GAMEOVER') { imagenADibujar = imgChoca; } 
-            else if (!chipa.enElSuelo) { imagenADibujar = imgSalta; } 
-            else if (estadoJuego === 'JUGANDO') {
+
+            if (estadoJuego === 'GAMEOVER') {
+                imagenADibujar = imgChoca; 
+            } else if (!chipa.enElSuelo) {
+                imagenADibujar = imgSalta;
+            } else if (estadoJuego === 'JUGANDO') {
                 chipa.timerAnimacion++;
-                if (chipa.timerAnimacion % 6 === 0) chipa.frameActual = (chipa.frameActual + 1) % 3; 
+                if (chipa.timerAnimacion % 6 === 0) { 
+                    chipa.frameActual = (chipa.frameActual + 1) % 3; 
+                }
                 if (chipa.frameActual === 0) imagenADibujar = imgCorre1;
                 else if (chipa.frameActual === 1) imagenADibujar = imgCorre2;
                 else imagenADibujar = imgCorre3;
             }
 
-            if (imagenADibujar.naturalWidth > 0) ctx.drawImage(imagenADibujar, chipa.x, chipa.y, chipa.ancho, chipa.alto);
+            // Dibuja la chipa - con fallback si la imagen aún no cargó
+            if (imagenADibujar.complete && imagenADibujar.naturalWidth > 0) {
+                ctx.drawImage(imagenADibujar, chipa.x, chipa.y, chipa.ancho, chipa.alto);
+            } else {
+                // Fallback: círculo amarillo mientras carga
+                ctx.fillStyle = "#ffd54f";
+                ctx.beginPath();
+                ctx.arc(chipa.x + chipa.ancho/2, chipa.y + chipa.alto/2, chipa.ancho/2, 0, Math.PI*2);
+                ctx.fill();
+            }
 
-            ctx.fillStyle = "#3e2723"; ctx.fillRect(obstaculo.x, obstaculo.y, obstaculo.ancho, obstaculo.alto);
-            ctx.fillStyle = (nivel === 4 || nivel === 9) ? "#ffffff" : "#000000"; ctx.font = "bold 15px Arial";
-            ctx.fillText(configuracionNiveles[nivel].nombre, 20, 30); ctx.fillText("Chipas Salvadas: " + score, 20, 55);
+            // Dibujar todas las chiperitas del grupo actual
+            for (let obs of obstaculos) {
+                if (imgChiperita.complete && imgChiperita.naturalWidth > 0) {
+                    ctx.drawImage(imgChiperita, obs.x, obs.y, ANCHO_CHIPERITA, ALTO_CHIPERITA);
+                } else {
+                    ctx.fillStyle = "#e53935";
+                    ctx.fillRect(obs.x, obs.y, ANCHO_CHIPERITA, ALTO_CHIPERITA);
+                }
+            }
+
+            ctx.fillStyle = "#000000"; 
+            ctx.font = "bold 15px Arial";
+            ctx.fillText(configuracionNiveles[nivel].nombre, 20, 30);
+            ctx.fillText("Puntos: " + score, 20, 55);
 
             if (timerAnuncioNivel > 0 && estadoJuego === 'JUGANDO') {
-                ctx.save(); ctx.textAlign = "center"; ctx.font = "bold 46px 'Impact', sans-serif";
-                ctx.strokeStyle = "#000000"; ctx.lineWidth = 6; ctx.strokeText("NIVEL " + nivel, canvas.width / 2, 130);
-                ctx.fillStyle = "#ffd54f"; ctx.fillText("NIVEL " + nivel, canvas.width / 2, 130); ctx.restore();
+                ctx.save();
+                ctx.textAlign = "center";
+                ctx.font = "bold 46px 'Impact', sans-serif";
+                
+                ctx.strokeStyle = "#000000";
+                ctx.lineWidth = 6;
+                ctx.strokeText("NIVEL " + nivel, canvas.width / 2, 130);
+                
+                ctx.fillStyle = "#ffd54f";
+                ctx.fillText("NIVEL " + nivel, canvas.width / 2, 130);
+                ctx.restore();
+                
                 timerAnuncioNivel--;
             }
 
             if (estadoJuego === 'INICIO') {
-                ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px 'Impact', sans-serif"; ctx.textAlign = "center";
-                ctx.fillText("¡PREPARATE!", canvas.width / 2, 170); ctx.font = "18px Arial";
-                ctx.fillText("TOCÁ LA PANTALLA o ESPACIO para viajar", canvas.width / 2, 220); ctx.textAlign = "start";
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 32px 'Impact', sans-serif";
+                ctx.textAlign = "center";
+                ctx.font = "bold 32px 'Impact', sans-serif";
+                ctx.letterSpacing = "8px";
+                ctx.fillText("¡PREPARATE!", canvas.width / 2, 170);
+                ctx.letterSpacing = "0px";
+                ctx.font = "18px Arial";
+                ctx.fillText("Tocá la pantalla o presioná ESPACIO para escaparte", canvas.width / 2, 220);
+                ctx.textAlign = "start";
             }
             
             if (estadoJuego === 'GAMEOVER') {
-                ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "#ffffff"; ctx.font = "bold 26px Arial"; ctx.textAlign = "center";
-                ctx.fillText("Chipas salvadas: " + score, canvas.width / 2, 150); ctx.font = "18px Arial"; ctx.fillStyle = "#e0e0e0";
-                ctx.fillText("TOCÁ LA PANTALLA para reiniciar", canvas.width / 2, 210); ctx.fillStyle = "#ffd54f"; ctx.font = "bold 18px Arial";
-                ctx.fillText("Botón 'C' (PC) para COMPARTIR tu logro", canvas.width / 2, 260); ctx.textAlign = "start"; 
+                ctx.fillStyle = "rgba(0,0,0,0.75)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                // Mostrar botón compartir en móviles explícitamente ya que no hay tecla C
-                ctx.fillStyle = "#25D366"; ctx.fillRect(canvas.width / 2 - 80, 290, 160, 40);
-                ctx.fillStyle = "#ffffff"; ctx.font = "bold 16px Arial"; ctx.fillText("COMPARTIR ➔", canvas.width / 2 - 60, 316);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 26px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("¡Sumaste " + score + " puntos!", canvas.width / 2, 150);
+                
+                ctx.font = "18px Arial";
+                ctx.fillStyle = "#e0e0e0";
+                ctx.fillText("Tocá la pantalla para reiniciar", canvas.width / 2, 210);
+                
+                ctx.fillStyle = "#ffd54f";
+                ctx.font = "bold 18px Arial";
+                ctx.fillText("Presioná 'C' o el botón naranja para compartir", canvas.width / 2, 260);
+                ctx.textAlign = "start";
+
+                document.getElementById("btnCompartirMovil").style.display = "block";
+            } else {
+                document.getElementById("btnCompartirMovil").style.display = "none";
             }
 
             requestAnimationFrame(loop);
         }
 
-        // Botón visual para compartir en móviles (Detección de clic en el canvas)
-        canvas.addEventListener("mousedown", (e) => checkShareClick(e.offsetX, e.offsetY));
-        canvas.addEventListener("touchstart", (e) => {
-            if(estadoJuego === 'GAMEOVER') {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
-                const x = (e.touches[0].clientX - rect.left) * scaleX;
-                const y = (e.touches[0].clientY - rect.top) * scaleY;
-                checkShareClick(x, y);
-            }
-        });
-
-        function checkShareClick(x, y) {
-            if (estadoJuego === 'GAMEOVER' && x > canvas.width / 2 - 80 && x < canvas.width / 2 + 80 && y > 290 && y < 330) {
-                abrirCompartir();
-            }
+        // ==========================================
+        // --- FUNCIONES DE LA INTERFAZ COMPARTIR ---
+        // ==========================================
+        function abrirCompartir() {
+            document.getElementById("txtPuntajeLogro").innerText = `¡Sumaste ${score} puntos!`;
+            document.getElementById("shareScreen").style.display = "flex";
         }
 
-        // --- INTERFAZ COMPARTIR ---
-        function abrirCompartir() { document.getElementById("txtPuntajeLogro").innerText = `¡Salvaste ${score} chipas en la ruta!`; document.getElementById("shareScreen").style.display = "flex"; }
-        function cerrarCompartir() { document.getElementById("shareScreen").style.display = "none"; }
-        function obtenerMensaje() { let nombre = document.getElementById("playerName").value || "Un Viajero"; return encodeURIComponent(`¡${nombre} salvó ${score} chipas en el juego "La Chipa Viajera"! 🥮🇵🇾 ¿Podés superarlo?`); }
+        function cerrarCompartir() {
+            document.getElementById("shareScreen").style.display = "none";
+        }
+
+        function obtenerMensaje() {
+            let nombre = document.getElementById("playerName").value || "Un Viajero";
+            return encodeURIComponent(`¡${nombre} sumó ${score} puntos en el juego de La Chipa Viajera! ¿Podés superarlo? Jugá acá: https://juanterere.github.io/Escape-de-la-Chipa-Viajera/`);
+        }
+
         function compartir(plataforma) {
-            let t = obtenerMensaje(); let url = "";
-            if (plataforma === 'whatsapp') url = `https://api.whatsapp.com/send?text=${t}`;
-            else if (plataforma === 'facebook') url = `https://www.facebook.com/sharer/sharer.php?u=https://lachipaviajera.com&quote=${t}`;
-            else if (plataforma === 'email') url = `mailto:?subject=¡Mi Logro en La Chipa Viajera!&body=${t}`;
+            let texto = obtenerMensaje();
+            let url = "";
+            
+            if (plataforma === 'whatsapp') {
+                url = `https://api.whatsapp.com/send?text=${texto}`;
+            } else if (plataforma === 'facebook') {
+                // Facebook sharer con el link del juego y mensaje en quote
+                const fbLink = encodeURIComponent("https://juanterere.github.io/Escape-de-la-Chipa-Viajera/");
+                const nombre2 = document.getElementById("playerName").value.trim() || "Un Viajero";
+                const fbMensaje = encodeURIComponent(`¡${nombre2} sumó ${score} puntos en el juego de La Chipa Viajera! ¿Podés superarlo? Jugá acá:`);
+                url = `https://www.facebook.com/sharer/sharer.php?u=${fbLink}&quote=${fbMensaje}`;
+            } else if (plataforma === 'email') {
+                url = `mailto:?subject=¡Mi Logro en La Chipa Viajera!&body=${texto}`;
+            }
+            
             window.open(url, '_blank');
         }
+
         function descargarLogro() {
-            let nombre = document.getElementById("playerName").value || "Un Viajero";
-            let c = `--- CERTIFICADO DE LA CHIPA VIAJERA ---\n\nFelicitaciones ${nombre}.\nLograste salvar un total de: ${score} chipas en las rutas de Paraguay.\n\n¡Gracias por jugar!`;
-            let blob = new Blob([c], { type: "text/plain;charset=utf-8" });
-            let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Logro_ChipaViajera_${nombre}.txt`; link.click();
+            const nombre = document.getElementById("playerName").value.trim() || "Un Viajero";
+            const certImg = new Image();
+            certImg.crossOrigin = "anonymous";
+            certImg.src = "Certificado%20de%20puntos.jpg";
+            certImg.onload = function() {
+                // Crear canvas del tamaño de la imagen
+                const c = document.createElement("canvas");
+                c.width  = certImg.naturalWidth;
+                c.height = certImg.naturalHeight;
+                const cx = c.getContext("2d");
+
+                // Dibujar la imagen de fondo
+                cx.drawImage(certImg, 0, 0);
+
+                // Medición exacta del template:
+                // Verde sólido: 58.49%–85.78% vertical, 10.83%–67.41% horizontal
+                // Bloque "Gracias por jugar" empieza en 75% → texto va entre 58.5% y 74%
+                // Zona útil: 15.5% del alto total = 297px en imagen 1920px
+
+                const verdeTop    = c.height * 0.585;  // 58.5% - inicio del verde
+                const verdeBot    = c.height * 0.740;  // 74%   - antes del "Gracias"
+                const zonaH       = verdeBot - verdeTop; // alto útil ~297px
+                const rx          = c.width  * 0.108;   // 10.8% - borde izq del verde
+                const rw          = c.width  * 0.566;   // 56.6% - ancho del verde
+
+                // Fondo oscuro exacto sobre el verde útil
+                cx.fillStyle = "rgba(0, 55, 10, 0.85)";
+                cx.roundRect(rx, verdeTop, rw, zonaH, 12);
+                cx.fill();
+
+                const cx_center = rx + rw / 2;
+
+                // Nombre — centrado en el tercio superior de la zona
+                cx.fillStyle = "#ffffff";
+                cx.font = `bold ${c.width * 0.052}px Impact, sans-serif`;
+                cx.textAlign = "center";
+                cx.textBaseline = "middle";
+                cx.fillText(nombre, cx_center, verdeTop + zonaH * 0.33);
+
+                // Puntos — centrado en el tercio inferior de la zona
+                cx.fillStyle = "#ffd54f";
+                cx.font = `bold ${c.width * 0.062}px Impact, sans-serif`;
+                cx.fillText(`${score} PUNTOS`, cx_center, verdeTop + zonaH * 0.72);
+
+                cx.textAlign = "start";
+                cx.textBaseline = "alphabetic";
+
+                // Descargar
+                const link = document.createElement("a");
+                link.href = c.toDataURL("image/jpeg", 0.92);
+                link.download = `Certificado_ChipaViajera_${nombre}.jpg`;
+                link.click();
+            };
+            certImg.onerror = function() {
+                alert("No se encontró el archivo 'Certificado de puntos.jpg'. Verificá que esté en la carpeta del juego.");
+            };
         }
+
+
+        // ==========================================
+        // --- RANKING con Firebase Firestore ---
+        // ==========================================
+        // Firebase compat — funciona sin import/module
+        const firebaseConfig = {
+            apiKey: "AIzaSyB10bUqX1pgVevX2bEHjEjj0XaxaEby3yE",
+            authDomain: "la-chipa-viajera.firebaseapp.com",
+            projectId: "la-chipa-viajera",
+            storageBucket: "la-chipa-viajera.firebasestorage.app",
+            messagingSenderId: "407996707990",
+            appId: "1:407996707990:web:ec2c56f42a05b67cd13eb7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function guardarEnRanking(nombre, puntos) {
+            try {
+                await db.collection("ranking").add({
+                    nombre: nombre.trim(),
+                    puntos: puntos,
+                    fecha: new Date()
+                });
+            } catch(e) { console.error("Error guardando ranking:", e); }
+        }
+
+        async function obtenerRanking() {
+            try {
+                const snap = await db.collection("ranking")
+                    .orderBy("puntos", "desc")
+                    .limit(10)
+                    .get();
+                return snap.docs.map(d => d.data());
+            } catch(e) { console.error("Error leyendo ranking:", e); return []; }
+        }
+
+        async function abrirRanking() {
+            const nombre = document.getElementById("playerName").value.trim() || "Un Viajero";
+            if (score > 0) await guardarEnRanking(nombre, score);
+
+            const modal = document.getElementById("rankingModal");
+            const lista = document.getElementById("rankingList");
+            lista.innerHTML = '<li style="justify-content:center;color:#888">Cargando...</li>';
+            modal.style.display = "flex";
+
+            const top = await obtenerRanking();
+            const medallas = ["🥇","🥈","🥉"];
+
+            if (top.length === 0) {
+                lista.innerHTML = '<li style="justify-content:center;color:#888">¡Todavía no hay puntajes! Sé el primero.</li>';
+            } else {
+                lista.innerHTML = top.map((e, i) =>
+                    `<li>
+                        <span class="rank-pos">${medallas[i] || (i+1)+'.'}</span>
+                        <span class="rank-nombre">${e.nombre}</span>
+                        <span class="rank-pts">${e.puntos} pts</span>
+                    </li>`
+                ).join('');
+            }
+        }
+
+        function cerrarRanking() {
+            document.getElementById("rankingModal").style.display = "none";
+        }
+
+        // Arrancar el juego
+        requestAnimationFrame(loop);
     </script>
 </body>
 </html>
