@@ -42,19 +42,22 @@
             height: auto;
             touch-action: none;
         }
-        @media screen and (max-width: 768px) and (orientation: landscape) {
-            body { margin: 0; padding: 0; background: #000; }
+        @media screen and (max-width: 900px) and (orientation: landscape) {
+            html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
             #gameContainer {
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 width: 100vw;
                 height: 100vh;
+                overflow: hidden;
             }
             canvas {
-                width: 100vw !important;
-                height: auto !important;
-                max-height: 100vh;
+                /* Ajustar para que entre COMPLETO: letterbox horizontal */
+                max-width: 100vw !important;
+                max-height: 100vh !important;
+                width: auto !important;
+                height: 100vh !important;
             }
         }
 
@@ -648,31 +651,31 @@
                 // Dibujar la imagen de fondo
                 cx.drawImage(certImg, 0, 0);
 
-                // Rectángulo verde: 8% x, 63% y, 46% w, 14% h
-                // (subido para no tapar el "¡Gracias por jugar!" que empieza en ~78%)
+                // Rectángulo verde medido con precisión: 8%–67.6% x, 58.5%–79% y
+                // (usamos solo la parte superior del verde, antes del "¡Gracias por jugar!")
                 const rx = c.width  * 0.08;
-                const ry = c.height * 0.635;
-                const rw = c.width  * 0.46;
-                const rh = c.height * 0.135;
+                const ry = c.height * 0.585;  // inicio real del verde
+                const rw = c.width  * 0.596;  // ancho real del verde
+                const rh = c.height * 0.185;  // altura usable (hasta ~77%)
 
                 // Tapamos el verde con fondo oscuro
-                cx.fillStyle = "rgba(0, 50, 0, 0.82)";
-                cx.roundRect(rx, ry, rw, rh, 14);
+                cx.fillStyle = "rgba(0, 50, 0, 0.88)";
+                cx.roundRect(rx, ry, rw, rh, 16);
                 cx.fill();
 
                 const cx_center = rx + rw / 2;
 
-                // Nombre del jugador (40% del alto del rect desde arriba)
+                // Nombre del jugador — 35% desde arriba del rect
                 cx.fillStyle = "#ffffff";
-                cx.font = `bold ${c.width * 0.052}px Impact, sans-serif`;
+                cx.font = `bold ${c.width * 0.056}px Impact, sans-serif`;
                 cx.textAlign = "center";
                 cx.textBaseline = "middle";
-                cx.fillText(nombre, cx_center, ry + rh * 0.38);
+                cx.fillText(nombre, cx_center, ry + rh * 0.35);
 
-                // Puntos (72% del alto del rect)
+                // Puntos — 68% desde arriba del rect
                 cx.fillStyle = "#ffd54f";
-                cx.font = `bold ${c.width * 0.060}px Impact, sans-serif`;
-                cx.fillText(`${score} PUNTOS`, cx_center, ry + rh * 0.74);
+                cx.font = `bold ${c.width * 0.068}px Impact, sans-serif`;
+                cx.fillText(`${score} PUNTOS`, cx_center, ry + rh * 0.68);
 
                 cx.textAlign = "start";
                 cx.textBaseline = "alphabetic";
