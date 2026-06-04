@@ -729,7 +729,7 @@
             try {
                 const snap = await db.collection("ranking")
                     .orderBy("puntos", "desc")
-                    .limit(10)
+                    .limit(5)
                     .get();
                 return snap.docs.map(d => d.data());
             } catch(e) { console.error("Error leyendo ranking:", e); return []; }
